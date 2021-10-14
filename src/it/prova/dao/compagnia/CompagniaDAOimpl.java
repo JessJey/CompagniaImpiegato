@@ -12,12 +12,12 @@ import it.prova.dao.AbstractMySQLDAO;
 import it.prova.model.Compagnia;
 import it.prova.model.Impiegato;
 
-public class CompagniaDAOimpl extends AbstractMySQLDAO implements CompagniaDAO{
+public class CompagniaDAOimpl extends AbstractMySQLDAO implements CompagniaDAO {
 
 	public CompagniaDAOimpl(Connection connection) {
 		super(connection);
 	}
-	
+
 	public List<Compagnia> list() throws Exception {
 		if (isNotActive())
 			throw new Exception("Connessione non attiva. Impossibile effettuare operazioni DAO.");
@@ -57,9 +57,9 @@ public class CompagniaDAOimpl extends AbstractMySQLDAO implements CompagniaDAO{
 			try (ResultSet rs = ps.executeQuery()) {
 				if (rs.next()) {
 					result = new Compagnia();
-					result.setRagionesociale(rs.getString("NOME"));
-					result.setFatturatoannuo(rs.getInt("COGNOME"));
-					result.setDatafondazione(rs.getDate("LOGIN"));
+					result.setRagionesociale(rs.getString("ragionesociale"));
+					result.setFatturatoannuo(rs.getInt("fatturatoannuo"));
+					result.setDatafondazione(rs.getDate("datafondazione"));
 					result.setId(rs.getLong("ID"));
 				} else {
 					result = null;
@@ -98,25 +98,25 @@ public class CompagniaDAOimpl extends AbstractMySQLDAO implements CompagniaDAO{
 
 	public int insert(Compagnia input) throws Exception {
 		// prima di tutto cerchiamo di capire se possiamo effettuare le operazioni
-				if (isNotActive())
-					throw new Exception("Connessione non attiva. Impossibile effettuare operazioni DAO.");
+		if (isNotActive())
+			throw new Exception("Connessione non attiva. Impossibile effettuare operazioni DAO.");
 
-				if (input == null)
-					throw new Exception("Valore di input non ammesso.");
+		if (input == null)
+			throw new Exception("Valore di input non ammesso.");
 
-				int result = 0;
-				try (PreparedStatement ps = connection.prepareStatement(
-						"INSERT INTO compagnia (ragionesociale, fatturatoannuo, datafondazione) VALUES (?, ?, ?);")) {
-					ps.setString(1, input.getRagionesociale());
-					ps.setInt(2, input.getFatturatoannuo());
-					// quando si fa il setDate serve un tipo java.sql.Date
-					ps.setDate(3, new java.sql.Date(input.getDatafondazione().getTime()));
-					result = ps.executeUpdate();
-				} catch (Exception e) {
-					e.printStackTrace();
-					throw e;
-				}
-				return result;
+		int result = 0;
+		try (PreparedStatement ps = connection.prepareStatement(
+				"INSERT INTO compagnia (ragionesociale, fatturatoannuo, datafondazione) VALUES (?, ?, ?);")) {
+			ps.setString(1, input.getRagionesociale());
+			ps.setInt(2, input.getFatturatoannuo());
+			// quando si fa il setDate serve un tipo java.sql.Date
+			ps.setDate(3, new java.sql.Date(input.getDatafondazione().getTime()));
+			result = ps.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw e;
+		}
+		return result;
 	}
 
 	public int delete(Compagnia input) throws Exception {
@@ -182,12 +182,12 @@ public class CompagniaDAOimpl extends AbstractMySQLDAO implements CompagniaDAO{
 
 		if (data == null)
 			throw new Exception("Valore di input non ammesso.");
-		
-		List<Impiegato> result = new ArrayList<Impiegato>();;
-		Impiegato impiegatoTemp; 
-		try (PreparedStatement ps = 
-				connection.prepareStatement("SELECT * FROM compagniaimpiegato.impiegato i inner join compagniaimpiegato.compagnia c on i.compagnia_id=c.id where i.datadiassunzione > ?;")) 
-		{
+
+		List<Impiegato> result = new ArrayList<Impiegato>();
+		;
+		Impiegato impiegatoTemp;
+		try (PreparedStatement ps = connection.prepareStatement(
+				"SELECT * FROM compagniaimpiegato.impiegato i inner join compagniaimpiegato.compagnia c on i.compagnia_id=c.id where i.datadiassunzione > ?;")) {
 
 			ps.setDate(1, new java.sql.Date(data.getTime()));
 			try (ResultSet rs = ps.executeQuery()) {
@@ -199,17 +199,17 @@ public class CompagniaDAOimpl extends AbstractMySQLDAO implements CompagniaDAO{
 					impiegatoTemp.setDatadinascita(rs.getDate("datadinascita"));
 					impiegatoTemp.setDatadiassunzione(rs.getDate("datadiassunzione"));
 					impiegatoTemp.setId(rs.getLong("ID"));
-					
-					Compagnia compagniaTemp= new Compagnia();
+
+					Compagnia compagniaTemp = new Compagnia();
 					compagniaTemp = new Compagnia();
 					compagniaTemp.setRagionesociale(rs.getString("ragionesociale"));
 					compagniaTemp.setFatturatoannuo(rs.getInt("fatturatoannuo"));
 					compagniaTemp.setDatafondazione(rs.getDate("datafondazione"));
 					compagniaTemp.setId(rs.getLong("ID"));
-					
+
 					impiegatoTemp.setCompagnia(compagniaTemp);
 					result.add(impiegatoTemp);
-					
+
 				} else {
 					result = null;
 				}
@@ -220,7 +220,7 @@ public class CompagniaDAOimpl extends AbstractMySQLDAO implements CompagniaDAO{
 			throw e;
 		}
 		return result;
-		
+
 	}
 
 	public List<Compagnia> findAllByRagioneSocialeContiene(String inputRagioneSociale) throws Exception {
@@ -233,8 +233,9 @@ public class CompagniaDAOimpl extends AbstractMySQLDAO implements CompagniaDAO{
 		ArrayList<Compagnia> result = new ArrayList<Compagnia>();
 		Compagnia compagniaTemp = null;
 
-		try (PreparedStatement ps = connection.prepareStatement("select * from compagnia where regionesociale like '%"+ inputRagioneSociale+"%' ;")) {
-		
+		try (PreparedStatement ps = connection.prepareStatement(
+				"select * from compagnia where ragionesociale like '%" + inputRagioneSociale + "%' ;")) {
+
 			try (ResultSet rs = ps.executeQuery();) {
 				while (rs.next()) {
 					compagniaTemp = new Compagnia();
@@ -253,51 +254,4 @@ public class CompagniaDAOimpl extends AbstractMySQLDAO implements CompagniaDAO{
 		return result;
 	}
 
-	
-	public int insertCompleto(Impiegato input) throws Exception {
-		if (isNotActive())
-			throw new Exception("Connessione non attiva. Impossibile effettuare operazioni DAO.");
-
-		if (input == null)
-			throw new Exception("Valore di input non ammesso.");
-		
-		
-		int result = 0;
-		
-		try (PreparedStatement ps = 
-				connection.prepareStatement
-			("INSERT INTO compagnia (ragionesociale, fatturatoannuo,datafondazione) VALUES (?, ?,?);",
-							Statement.RETURN_GENERATED_KEYS)){
-				ps.setString(1, input.getCompagnia().getRagionesociale());
-				ps.setInt(2, input.getCompagnia().getFatturatoannuo());
-				ps.setDate(3, new java.sql.Date(input.getCompagnia().getDatafondazione().getTime()));
-			
-			//try (int registiInseriti = ps.executeUpdate();){
-
-					/*// mi metto da parte l'id inserito
-					int last_inserted_id = -1;
-					rs = ps.getGeneratedKeys();
-					if (rs.next()) {
-						last_inserted_id = rs.getInt(1);
-					} {
-				while (rs.next()) {
-					compagniaTemp = new Compagnia();
-					compagniaTemp.setRagionesociale(rs.getString("ragionesociale"));
-					compagniaTemp.setFatturatoannuo(rs.getInt("fatturatoannuo"));
-					compagniaTemp.setDatafondazione(rs.getDate("datafondazione"));
-					compagniaTemp.setId(rs.getLong("ID"));
-					result.add(compagniaTemp);
-				}
-			} // niente catch qui
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw e;
-		}
-		return result;
-	}*/
-	return result;
-	
-		}
-	}
 }

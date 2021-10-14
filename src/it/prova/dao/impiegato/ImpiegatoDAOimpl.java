@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-
 import it.prova.dao.AbstractMySQLDAO;
 import it.prova.model.Compagnia;
 import it.prova.model.Impiegato;
@@ -25,8 +24,11 @@ public class ImpiegatoDAOimpl extends AbstractMySQLDAO implements ImpiegatoDAO {
 
 		ArrayList<Impiegato> result = new ArrayList<Impiegato>();
 		Impiegato impiegatoTemp = null;
+		Compagnia compagniaTemp = null;
 
-		try (Statement ps = connection.createStatement(); ResultSet rs = ps.executeQuery("select * from impiegato")) {
+		try (Statement ps = connection.createStatement();
+				ResultSet rs = ps.executeQuery(
+						"SELECT * FROM compagniaimpiegato.impiegato i inner join compagniaimpiegato.compagnia c on i.compagnia_id=c.id ;")) {
 
 			while (rs.next()) {
 				impiegatoTemp = new Impiegato();
@@ -36,6 +38,14 @@ public class ImpiegatoDAOimpl extends AbstractMySQLDAO implements ImpiegatoDAO {
 				impiegatoTemp.setDatadinascita(rs.getDate("datadinascita"));
 				impiegatoTemp.setDatadiassunzione(rs.getDate("datadiassunzione"));
 				impiegatoTemp.setId(rs.getLong("ID"));
+
+				compagniaTemp = new Compagnia();
+				compagniaTemp.setRagionesociale(rs.getString("ragionesociale"));
+				compagniaTemp.setFatturatoannuo(rs.getInt("fatturatoannuo"));
+				compagniaTemp.setDatafondazione(rs.getDate("datafondazione"));
+				compagniaTemp.setId(rs.getLong("ID"));
+
+				impiegatoTemp.setCompagnia(compagniaTemp);
 				result.add(impiegatoTemp);
 			}
 
@@ -111,12 +121,13 @@ public class ImpiegatoDAOimpl extends AbstractMySQLDAO implements ImpiegatoDAO {
 
 		int result = 0;
 		try (PreparedStatement ps = connection.prepareStatement(
-				"INSERT INTO impiegato (nome, cognome, cf, datadinascita, datadiassunzione) VALUES (?, ?, ?, ?, ?);")) {
+				"INSERT INTO impiegato (nome, cognome, cf, datadinascita, datadiassunzione, compagnia_id) VALUES (?, ?, ?, ?, ?, ?);")) {
 			ps.setString(1, input.getNome());
 			ps.setString(2, input.getCognome());
 			ps.setString(3, input.getCf());
 			ps.setDate(4, new java.sql.Date(input.getDatadinascita().getTime()));
 			ps.setDate(5, new java.sql.Date(input.getDatadiassunzione().getTime()));
+			ps.setLong(6, input.getCompagnia().getId());
 			result = ps.executeUpdate();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -273,7 +284,7 @@ public class ImpiegatoDAOimpl extends AbstractMySQLDAO implements ImpiegatoDAO {
 		;
 		Impiegato impiegatoTemp;
 		try (PreparedStatement ps = connection.prepareStatement(
-				"SELECT * FROM compagniaimpiegato.impiegato i inner join compagniaimpiegato.compagnia c on i.compagnia_id=c.id where c.fatturatoannuale > ?;")) {
+				"SELECT * FROM compagniaimpiegato.impiegato i inner join compagniaimpiegato.compagnia c on i.compagnia_id=c.id where c.fatturatoannuo > ?;")) {
 			ps.setInt(1, fatturatoInput);
 			try (ResultSet rs = ps.executeQuery()) {
 				if (rs.next()) {
@@ -316,7 +327,7 @@ public class ImpiegatoDAOimpl extends AbstractMySQLDAO implements ImpiegatoDAO {
 		Impiegato impiegatoTemp;
 		try (PreparedStatement ps = connection.prepareStatement(
 				"SELECT * FROM compagniaimpiegato.impiegato i inner join compagniaimpiegato.compagnia c on i.compagnia_id=c.id where i.datadiassunzione < c.datafondazione;")) {
-			
+
 			try (ResultSet rs = ps.executeQuery()) {
 				if (rs.next()) {
 					impiegatoTemp = new Impiegato();
